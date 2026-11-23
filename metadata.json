@@ -1,0 +1,6 @@
+{
+  "name": "মল্লিকা ফ্যাশন হাউস | Mallika Fashion House",
+  "description": "ঐতিহ্যবাহী শাড়ি, থ্রি-পিস, টি-শার্ট, থ্রি-কোয়ার্টার প্যান্ট, পাঞ্জাবি, কুর্তি, ওড়না ও সুতি বেডশিটের আধুনিক অনলাইন কাপড়ের দোকান।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

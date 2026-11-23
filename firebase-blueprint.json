@@ -1,0 +1,228 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Clothing or home textile item in মল্লিকা ফ্যাশন হাউস catalog with rate, colors, sizes, and publish state.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "englishKeywords": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "enum": ["saree-threepiece", "tshirt-pant", "apparel-orna", "bedsheet"] },
+        "categoryLabel": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "subCategory": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "image": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "galleryImages": { "type": "array", "description": "Up to 5 additional product photo URLs." },
+        "shortDescription": { "type": "string", "minLength": 2, "maxLength": 240 },
+        "description": { "type": "string", "minLength": 2, "maxLength": 1500 },
+        "fabric": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "careNote": { "type": "string", "minLength": 2, "maxLength": 240 },
+        "sizes": { "type": "array" },
+        "colors": { "type": "array" },
+        "stockStatus": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "featuredTag": { "type": "string", "maxLength": 40 },
+        "published": { "type": "boolean" },
+        "sortOrder": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "required": [
+        "id", "name", "category", "categoryLabel", "subCategory", "price", "image",
+        "shortDescription", "description", "fabric", "careNote", "sizes", "colors",
+        "stockStatus", "published", "sortOrder", "updatedAt", "updatedBy"
+      ]
+    },
+    "StoreDesignSettings": {
+      "title": "StoreDesignSettings",
+      "description": "মল্লিকা ফ্যাশন হাউস live storefront design, color palette, moving banner, address, and hero settings.",
+      "type": "object",
+      "properties": {
+        "storeName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "storeAddress": { "type": "string", "minLength": 2, "maxLength": 240 },
+        "storePhone": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "storeEmail": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "heroEyebrow": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "heroTitle": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "heroSubtitle": { "type": "string", "minLength": 2, "maxLength": 360 },
+        "heroImage": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "accentColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "canvasColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "surfaceColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "cardRadius": { "type": "string", "enum": ["sharp", "balanced", "soft"] },
+        "gridColumns": { "type": "number" },
+        "cardImageRatio": { "type": "string", "enum": ["4:3", "1:1", "3:4"] },
+        "bannerEnabled": { "type": "boolean" },
+        "bannerMessages": { "type": "array" },
+        "bannerSpeed": { "type": "string", "enum": ["slow", "normal", "fast"] },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "required": [
+        "storeName", "heroEyebrow", "heroTitle", "heroSubtitle", "heroImage",
+        "accentColor", "canvasColor", "surfaceColor", "cardRadius", "gridColumns",
+        "cardImageRatio", "updatedAt", "updatedBy"
+      ]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "মল্লিকা ফ্যাশন হাউস customer profile storing saved delivery address and phone for fast repeat checkout.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "fullName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "phone": { "type": "string", "minLength": 6, "maxLength": 24 },
+        "defaultArea": { "type": "string", "enum": ["dhaka", "outside"] },
+        "defaultAddress": { "type": "string", "minLength": 4, "maxLength": 300 },
+        "defaultNote": { "type": "string", "maxLength": 240 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "fullName", "phone", "defaultArea", "defaultAddress", "createdAt", "updatedAt"]
+    },
+    "QuizPublic": {
+      "title": "QuizPublic",
+      "description": "মল্লিকা ফ্যাশন হাউস public quiz question and reward metadata (correct answer excluded).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "question": { "type": "string", "minLength": 4, "maxLength": 300 },
+        "options": { "type": "array" },
+        "optionSalt": { "type": "string", "minLength": 4, "maxLength": 64 },
+        "optionDigest": { "type": "string", "minLength": 16, "maxLength": 128 },
+        "rewardTitle": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "couponCode": { "type": "string", "minLength": 3, "maxLength": 40, "pattern": "^[A-Z0-9_\\-]+$" },
+        "discountType": { "type": "string", "enum": ["fixed", "percent"] },
+        "discountValue": { "type": "number" },
+        "minOrderAmount": { "type": "number" },
+        "active": { "type": "boolean" },
+        "sortOrder": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "required": [
+        "id", "question", "options", "optionSalt", "optionDigest", "rewardTitle",
+        "couponCode", "discountType", "discountValue", "minOrderAmount", "active",
+        "sortOrder", "updatedAt", "updatedBy"
+      ]
+    },
+    "QuizAnswerSecret": {
+      "title": "QuizAnswerSecret",
+      "description": "Admin-only secret quiz answer index and reward verification values used by Firestore security rules.",
+      "type": "object",
+      "properties": {
+        "quizId": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "correctOptionIndex": { "type": "number" },
+        "couponCode": { "type": "string", "minLength": 3, "maxLength": 40, "pattern": "^[A-Z0-9_\\-]+$" },
+        "discountType": { "type": "string", "enum": ["fixed", "percent"] },
+        "discountValue": { "type": "number" },
+        "minOrderAmount": { "type": "number" },
+        "active": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "required": [
+        "quizId", "correctOptionIndex", "couponCode", "discountType",
+        "discountValue", "minOrderAmount", "active", "updatedAt", "updatedBy"
+      ]
+    },
+    "UserCoupon": {
+      "title": "UserCoupon",
+      "description": "Discount coupon earned by a verified customer after answering a quiz correctly.",
+      "type": "object",
+      "properties": {
+        "quizId": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "couponCode": { "type": "string", "minLength": 3, "maxLength": 40, "pattern": "^[A-Z0-9_\\-]+$" },
+        "rewardTitle": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "discountType": { "type": "string", "enum": ["fixed", "percent"] },
+        "discountValue": { "type": "number" },
+        "minOrderAmount": { "type": "number" },
+        "selectedOption": { "type": "number" },
+        "used": { "type": "boolean" },
+        "usedInOrderId": { "type": "string", "maxLength": 32 },
+        "claimedAt": { "type": "string", "format": "date-time" },
+        "usedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "quizId", "couponCode", "rewardTitle", "discountType", "discountValue",
+        "minOrderAmount", "selectedOption", "used", "claimedAt"
+      ]
+    },
+    "CustomerOrder": {
+      "title": "CustomerOrder",
+      "description": "মল্লিকা ফ্যাশন হাউস customer order with optional quiz coupon discount and PII restricted to owning user and admins.",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string", "minLength": 4, "maxLength": 32, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 2, "maxLength": 128 },
+        "customerName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "phone": { "type": "string", "minLength": 6, "maxLength": 24 },
+        "area": { "type": "string", "enum": ["dhaka", "outside"] },
+        "areaLabel": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "address": { "type": "string", "minLength": 4, "maxLength": 300 },
+        "deliveryNote": { "type": "string", "maxLength": 240 },
+        "paymentMethod": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "subtotal": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "couponCode": { "type": "string", "maxLength": 40 },
+        "couponQuizId": { "type": "string", "minLength": 2, "maxLength": 128 },
+        "deliveryFee": { "type": "number" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["নতুন অর্ডার", "প্রসেসিং", "ডেলিভারির পথে", "সম্পন্ন", "বাতিল"] },
+        "items": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "orderId", "customerName", "phone", "area", "areaLabel", "address",
+        "paymentMethod", "subtotal", "deliveryFee", "total", "status", "items", "createdAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "মল্লিকা ফ্যাশন হাউস admin role record.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "role": { "type": "string", "enum": ["admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "মল্লিকা ফ্যাশন হাউস catalog products editable by admin and live-streamed to shoppers when published."
+    },
+    "/storeSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/StoreDesignSettings" },
+      "description": "মল্লিকা ফ্যাশন হাউস storefront design settings (published and draft documents)."
+    },
+    "/users/{uid}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Customer profiles for fast repeat checkout."
+    },
+    "/users/{uid}/coupons/{quizId}": {
+      "schema": { "$ref": "#/entities/UserCoupon" },
+      "description": "Quiz reward coupons earned and redeemed by a specific customer."
+    },
+    "/quizzes/{quizId}": {
+      "schema": { "$ref": "#/entities/QuizPublic" },
+      "description": "Public storefront quizzes created by the admin."
+    },
+    "/quizAnswers/{quizId}": {
+      "schema": { "$ref": "#/entities/QuizAnswerSecret" },
+      "description": "Admin-only correct answer and coupon verification truth for each quiz."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/CustomerOrder" },
+      "description": "মল্লিকা ফ্যাশন হাউস customer checkout orders with PII restricted to owning user and admins."
+    },
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "মল্লিকা ফ্যাশন হাউস admin role documents."
+    }
+  }
+}

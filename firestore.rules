@@ -1,0 +1,404 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 2 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isVerifiedOwner(uid) {
+      return isVerifiedUser() && request.auth.uid == uid;
+    }
+
+    function isBootstrapAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'srabon10010@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrapAdmin() || (
+        isVerifiedUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidHex(val) {
+      return val is string && val.size() == 7 && val.matches('^#[0-9A-Fa-f]{6}$');
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll([
+          'id', 'name', 'category', 'categoryLabel', 'subCategory',
+          'price', 'image', 'shortDescription', 'description',
+          'fabric', 'careNote', 'sizes', 'colors', 'stockStatus',
+          'published', 'sortOrder', 'updatedAt', 'updatedBy'
+        ])
+        && data.keys().hasOnly([
+          'id', 'name', 'englishKeywords', 'category', 'categoryLabel', 'subCategory',
+          'price', 'originalPrice', 'image', 'galleryImages', 'shortDescription', 'description',
+          'fabric', 'careNote', 'sizes', 'colors', 'stockStatus', 'featuredTag',
+          'published', 'sortOrder', 'updatedAt', 'updatedBy'
+        ])
+        && isValidId(data.id)
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 120
+        && (!('englishKeywords' in data) || (data.englishKeywords is string && data.englishKeywords.size() <= 200))
+        && data.category in ['saree-threepiece', 'tshirt-pant', 'apparel-orna', 'bedsheet']
+        && data.categoryLabel is string && data.categoryLabel.size() >= 2 && data.categoryLabel.size() <= 60
+        && data.subCategory is string && data.subCategory.size() >= 2 && data.subCategory.size() <= 60
+        && data.price is number && data.price >= 1 && data.price <= 1000000
+        && (!('originalPrice' in data) || data.originalPrice == null || (data.originalPrice is number && data.originalPrice >= 1 && data.originalPrice <= 1000000))
+        && data.image is string && data.image.size() >= 1 && data.image.size() <= 500
+        && (!('galleryImages' in data) || (data.galleryImages is list && data.galleryImages.size() <= 5 && (data.galleryImages.size() == 0 || (data.galleryImages[0] is string && data.galleryImages[0].size() <= 500))))
+        && data.shortDescription is string && data.shortDescription.size() >= 2 && data.shortDescription.size() <= 240
+        && data.description is string && data.description.size() >= 2 && data.description.size() <= 1500
+        && data.fabric is string && data.fabric.size() >= 2 && data.fabric.size() <= 120
+        && data.careNote is string && data.careNote.size() >= 2 && data.careNote.size() <= 240
+        && data.sizes is list && data.sizes.size() >= 1 && data.sizes.size() <= 10 && data.sizes[0] is string
+        && data.colors is list && data.colors.size() >= 1 && data.colors.size() <= 10 && data.colors[0] is map
+        && data.stockStatus is string && data.stockStatus.size() >= 2 && data.stockStatus.size() <= 40
+        && (!('featuredTag' in data) || (data.featuredTag is string && data.featuredTag.size() <= 40))
+        && data.published is bool
+        && data.sortOrder is number && data.sortOrder >= 0 && data.sortOrder <= 10000
+        && data.updatedAt == request.time
+        && data.updatedBy is string && data.updatedBy == request.auth.uid;
+    }
+
+    function isValidStoreDesignSettings(data) {
+      return data.keys().hasAll([
+          'storeName', 'heroEyebrow', 'heroTitle', 'heroSubtitle', 'heroImage',
+          'accentColor', 'canvasColor', 'surfaceColor',
+          'cardRadius', 'gridColumns', 'cardImageRatio',
+          'updatedAt', 'updatedBy'
+        ])
+        && data.keys().hasOnly([
+          'storeName', 'storeAddress', 'storePhone', 'storeEmail',
+          'heroEyebrow', 'heroTitle', 'heroSubtitle', 'heroImage',
+          'accentColor', 'canvasColor', 'surfaceColor',
+          'cardRadius', 'gridColumns', 'cardImageRatio',
+          'bannerEnabled', 'bannerMessages', 'bannerSpeed',
+          'updatedAt', 'updatedBy'
+        ])
+        && data.storeName is string && data.storeName.size() >= 2 && data.storeName.size() <= 80
+        && (!('storeAddress' in data) || (data.storeAddress is string && data.storeAddress.size() >= 2 && data.storeAddress.size() <= 240))
+        && (!('storePhone' in data) || (data.storePhone is string && data.storePhone.size() >= 2 && data.storePhone.size() <= 100))
+        && (!('storeEmail' in data) || (data.storeEmail is string && data.storeEmail.size() >= 3 && data.storeEmail.size() <= 120))
+        && data.heroEyebrow is string && data.heroEyebrow.size() >= 2 && data.heroEyebrow.size() <= 80
+        && data.heroTitle is string && data.heroTitle.size() >= 2 && data.heroTitle.size() <= 140
+        && data.heroSubtitle is string && data.heroSubtitle.size() >= 2 && data.heroSubtitle.size() <= 360
+        && data.heroImage is string && data.heroImage.size() >= 1 && data.heroImage.size() <= 500
+        && isValidHex(data.accentColor)
+        && isValidHex(data.canvasColor)
+        && isValidHex(data.surfaceColor)
+        && data.cardRadius in ['sharp', 'balanced', 'soft']
+        && data.gridColumns is number && data.gridColumns >= 2 && data.gridColumns <= 4
+        && data.cardImageRatio in ['4:3', '1:1', '3:4']
+        && (!('bannerEnabled' in data) || data.bannerEnabled is bool)
+        && (!('bannerMessages' in data) || (data.bannerMessages is list && data.bannerMessages.size() <= 8 && (data.bannerMessages.size() == 0 || (data.bannerMessages[0] is string && data.bannerMessages[0].size() <= 160))))
+        && (!('bannerSpeed' in data) || data.bannerSpeed in ['slow', 'normal', 'fast'])
+        && data.updatedAt == request.time
+        && data.updatedBy is string && data.updatedBy == request.auth.uid;
+    }
+
+    function isValidUserProfile(data, uid) {
+      return data.keys().hasAll([
+          'uid', 'fullName', 'phone', 'defaultArea', 'defaultAddress', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'fullName', 'phone', 'defaultArea', 'defaultAddress', 'defaultNote', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.uid) && data.uid == uid
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100
+        && data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 24
+        && data.defaultArea in ['dhaka', 'outside']
+        && data.defaultAddress is string && data.defaultAddress.size() >= 4 && data.defaultAddress.size() <= 300
+        && (!('defaultNote' in data) || (data.defaultNote is string && data.defaultNote.size() <= 240))
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function isValidQuizPublic(data, quizId) {
+      return data.keys().hasAll([
+          'id', 'question', 'options', 'optionSalt', 'optionDigest', 'rewardTitle',
+          'couponCode', 'discountType', 'discountValue', 'minOrderAmount',
+          'active', 'sortOrder', 'updatedAt', 'updatedBy'
+        ])
+        && data.keys().hasOnly([
+          'id', 'question', 'options', 'optionSalt', 'optionDigest', 'rewardTitle',
+          'couponCode', 'discountType', 'discountValue', 'minOrderAmount',
+          'active', 'sortOrder', 'updatedAt', 'updatedBy'
+        ])
+        && isValidId(data.id) && data.id == quizId
+        && data.question is string && data.question.size() >= 4 && data.question.size() <= 300
+        && data.options is list && data.options.size() >= 2 && data.options.size() <= 4
+        && data.options[0] is string && data.options[0].size() >= 1 && data.options[0].size() <= 150
+        && data.options[1] is string && data.options[1].size() >= 1 && data.options[1].size() <= 150
+        && data.optionSalt is string && data.optionSalt.size() >= 4 && data.optionSalt.size() <= 64
+        && data.optionDigest is string && data.optionDigest.size() >= 16 && data.optionDigest.size() <= 128
+        && data.rewardTitle is string && data.rewardTitle.size() >= 2 && data.rewardTitle.size() <= 120
+        && data.couponCode is string && data.couponCode.size() >= 3 && data.couponCode.size() <= 40 && data.couponCode.matches('^[A-Z0-9_\\-]+$')
+        && data.discountType in ['fixed', 'percent']
+        && data.discountValue is number && data.discountValue >= 1 && data.discountValue <= 100000
+        && (data.discountType != 'percent' || data.discountValue <= 80)
+        && data.minOrderAmount is number && data.minOrderAmount >= 0 && data.minOrderAmount <= 1000000
+        && data.active is bool
+        && data.sortOrder is number && data.sortOrder >= 0 && data.sortOrder <= 10000
+        && data.updatedAt == request.time
+        && data.updatedBy is string && data.updatedBy == request.auth.uid;
+    }
+
+    function isValidQuizAnswerSecret(data, quizId) {
+      return data.keys().hasAll([
+          'quizId', 'correctOptionIndex', 'couponCode', 'discountType',
+          'discountValue', 'minOrderAmount', 'active', 'updatedAt', 'updatedBy'
+        ])
+        && data.keys().hasOnly([
+          'quizId', 'correctOptionIndex', 'couponCode', 'discountType',
+          'discountValue', 'minOrderAmount', 'active', 'updatedAt', 'updatedBy'
+        ])
+        && isValidId(data.quizId) && data.quizId == quizId
+        && data.correctOptionIndex is number && data.correctOptionIndex >= 0 && data.correctOptionIndex <= 3
+        && data.couponCode is string && data.couponCode.size() >= 3 && data.couponCode.size() <= 40 && data.couponCode.matches('^[A-Z0-9_\\-]+$')
+        && data.discountType in ['fixed', 'percent']
+        && data.discountValue is number && data.discountValue >= 1 && data.discountValue <= 100000
+        && (data.discountType != 'percent' || data.discountValue <= 80)
+        && data.minOrderAmount is number && data.minOrderAmount >= 0 && data.minOrderAmount <= 1000000
+        && data.active is bool
+        && data.updatedAt == request.time
+        && data.updatedBy is string && data.updatedBy == request.auth.uid;
+    }
+
+    function isValidUserCoupon(data, quizId) {
+      return data.keys().hasAll([
+          'quizId', 'couponCode', 'rewardTitle', 'discountType',
+          'discountValue', 'minOrderAmount', 'selectedOption', 'used', 'claimedAt'
+        ])
+        && data.keys().hasOnly([
+          'quizId', 'couponCode', 'rewardTitle', 'discountType',
+          'discountValue', 'minOrderAmount', 'selectedOption', 'used',
+          'usedInOrderId', 'claimedAt', 'usedAt'
+        ])
+        && isValidId(data.quizId) && data.quizId == quizId
+        && data.couponCode is string && data.couponCode.size() >= 3 && data.couponCode.size() <= 40 && data.couponCode.matches('^[A-Z0-9_\\-]+$')
+        && data.rewardTitle is string && data.rewardTitle.size() >= 2 && data.rewardTitle.size() <= 120
+        && data.discountType in ['fixed', 'percent']
+        && data.discountValue is number && data.discountValue >= 1 && data.discountValue <= 100000
+        && data.minOrderAmount is number && data.minOrderAmount >= 0 && data.minOrderAmount <= 1000000
+        && data.selectedOption is number && data.selectedOption >= 0 && data.selectedOption <= 3
+        && data.used is bool
+        && (!('usedInOrderId' in data) || (data.usedInOrderId is string && data.usedInOrderId.size() >= 4 && data.usedInOrderId.size() <= 32))
+        && data.claimedAt is timestamp
+        && (!('usedAt' in data) || data.usedAt is timestamp);
+    }
+
+    function matchesVerifiedQuizAnswer(data, quizId) {
+      return exists(/databases/$(database)/documents/quizAnswers/$(quizId))
+        && get(/databases/$(database)/documents/quizAnswers/$(quizId)).data.active == true
+        && data.selectedOption == get(/databases/$(database)/documents/quizAnswers/$(quizId)).data.correctOptionIndex
+        && data.couponCode == get(/databases/$(database)/documents/quizAnswers/$(quizId)).data.couponCode
+        && data.discountType == get(/databases/$(database)/documents/quizAnswers/$(quizId)).data.discountType
+        && data.discountValue == get(/databases/$(database)/documents/quizAnswers/$(quizId)).data.discountValue
+        && data.minOrderAmount == get(/databases/$(database)/documents/quizAnswers/$(quizId)).data.minOrderAmount;
+    }
+
+    function isValidCustomerOrder(data) {
+      return data.keys().hasAll([
+          'orderId', 'customerName', 'phone', 'area', 'areaLabel',
+          'address', 'paymentMethod', 'subtotal', 'deliveryFee', 'total',
+          'status', 'items', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'orderId', 'userId', 'customerName', 'phone', 'area', 'areaLabel',
+          'address', 'deliveryNote', 'paymentMethod', 'subtotal', 'discountAmount',
+          'couponCode', 'couponQuizId', 'deliveryFee', 'total',
+          'status', 'items', 'createdAt'
+        ])
+        && data.orderId is string && data.orderId.size() >= 4 && data.orderId.size() <= 32 && data.orderId.matches('^[a-zA-Z0-9_\\-]+$')
+        && (!('userId' in data) || isValidId(data.userId))
+        && data.customerName is string && data.customerName.size() >= 2 && data.customerName.size() <= 100
+        && data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 24
+        && data.area in ['dhaka', 'outside']
+        && data.areaLabel is string && data.areaLabel.size() >= 2 && data.areaLabel.size() <= 40
+        && data.address is string && data.address.size() >= 4 && data.address.size() <= 300
+        && (!('deliveryNote' in data) || (data.deliveryNote is string && data.deliveryNote.size() <= 240))
+        && data.paymentMethod is string && data.paymentMethod.size() >= 2 && data.paymentMethod.size() <= 60
+        && data.subtotal is number && data.subtotal >= 1 && data.subtotal <= 10000000
+        && (!('discountAmount' in data) || (data.discountAmount is number && data.discountAmount >= 0 && data.discountAmount <= data.subtotal))
+        && (!('couponCode' in data) || (data.couponCode is string && data.couponCode.size() <= 40))
+        && (!('couponQuizId' in data) || isValidId(data.couponQuizId))
+        && data.deliveryFee is number && data.deliveryFee >= 0 && data.deliveryFee <= 5000
+        && data.total is number && data.total >= 0 && data.total <= 10005000
+        && data.total >= (data.subtotal - (('discountAmount' in data) ? data.discountAmount : 0) + data.deliveryFee - 1)
+        && data.status in ['নতুন অর্ডার', 'প্রসেসিং', 'ডেলিভারির পথে', 'সম্পন্ন', 'বাতিল']
+        && data.items is list && data.items.size() >= 1 && data.items.size() <= 25 && data.items[0] is map
+        && data.createdAt is timestamp;
+    }
+
+    function isValidOrderCouponUsage(data) {
+      return (
+        (!('discountAmount' in data) || data.discountAmount == 0)
+        && !('couponQuizId' in data)
+      ) || (
+        ('discountAmount' in data)
+        && data.discountAmount > 0
+        && ('couponQuizId' in data)
+        && isVerifiedUser()
+        && ('userId' in data)
+        && data.userId == request.auth.uid
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid)/coupons/$(data.couponQuizId))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)/coupons/$(data.couponQuizId)).data.used == false
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/coupons/$(data.couponQuizId)).data.used == true
+        && (!('couponCode' in data) || data.couponCode == get(/databases/$(database)/documents/users/$(request.auth.uid)/coupons/$(data.couponQuizId)).data.couponCode)
+        && data.subtotal >= get(/databases/$(database)/documents/users/$(request.auth.uid)/coupons/$(data.couponQuizId)).data.minOrderAmount
+        && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)/coupons/$(data.couponQuizId)).data.discountType == 'fixed'
+            ? data.discountAmount <= get(/databases/$(database)/documents/users/$(request.auth.uid)/coupons/$(data.couponQuizId)).data.discountValue
+            : data.discountAmount <= ((data.subtotal * get(/databases/$(database)/documents/users/$(request.auth.uid)/coupons/$(data.couponQuizId)).data.discountValue) / 100) + 1
+        )
+      );
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'role', 'createdAt'])
+        && isValidId(data.uid)
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 150
+        && data.role == 'admin'
+        && data.createdAt == request.time;
+    }
+
+    // Products catalog: shoppers read published items live; admins read & manage all items
+    match /products/{productId} {
+      allow get: if isValidId(productId) && (existing().published == true || isAdmin());
+      allow list: if resource.data.published == true || isBootstrapAdmin();
+      allow create: if isValidId(productId) && isAdmin() && isValidProduct(incoming()) && incoming().id == productId;
+      allow update: if isValidId(productId) && isAdmin() && isValidProduct(incoming()) && incoming().id == existing().id;
+      allow delete: if isValidId(productId) && isAdmin();
+    }
+
+    // Store design settings: 'published' doc is readable by all shoppers; 'draft' is admin-only
+    match /storeSettings/{settingId} {
+      allow get: if isValidId(settingId) && (settingId == 'published' || isAdmin());
+      allow list: if isBootstrapAdmin();
+      allow create: if isValidId(settingId) && settingId in ['published', 'draft'] && isAdmin() && isValidStoreDesignSettings(incoming());
+      allow update: if isValidId(settingId) && settingId in ['published', 'draft'] && isAdmin() && isValidStoreDesignSettings(incoming());
+      allow delete: if false;
+    }
+
+    // Customer profiles: strictly isolated to the owning verified user or admin
+    match /users/{uid} {
+      allow get: if isValidId(uid) && (isVerifiedOwner(uid) || isAdmin());
+      allow list: if isBootstrapAdmin();
+      allow create: if isValidId(uid)
+        && isVerifiedOwner(uid)
+        && isValidUserProfile(incoming(), uid)
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(uid)
+        && isVerifiedOwner(uid)
+        && isValidUserProfile(incoming(), uid)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'fullName', 'phone', 'defaultArea', 'defaultAddress', 'defaultNote', 'updatedAt'
+        ]);
+      allow delete: if false;
+
+      // Earned quiz discount coupons per user
+      match /coupons/{quizId} {
+        allow get: if isValidId(uid) && isValidId(quizId) && (isVerifiedOwner(uid) || isAdmin());
+        allow list: if isVerifiedOwner(uid) || isBootstrapAdmin();
+        allow create: if isValidId(uid)
+          && isValidId(quizId)
+          && isVerifiedOwner(uid)
+          && isValidUserCoupon(incoming(), quizId)
+          && incoming().used == false
+          && incoming().claimedAt == request.time
+          && !exists(/databases/$(database)/documents/users/$(uid)/coupons/$(quizId))
+          && matchesVerifiedQuizAnswer(incoming(), quizId);
+        allow update: if isValidId(uid)
+          && isValidId(quizId)
+          && isVerifiedOwner(uid)
+          && isValidUserCoupon(incoming(), quizId)
+          && existing().used == false
+          && incoming().used == true
+          && incoming().quizId == existing().quizId
+          && incoming().couponCode == existing().couponCode
+          && incoming().discountType == existing().discountType
+          && incoming().discountValue == existing().discountValue
+          && incoming().minOrderAmount == existing().minOrderAmount
+          && incoming().selectedOption == existing().selectedOption
+          && incoming().claimedAt == existing().claimedAt
+          && incoming().usedAt == request.time
+          && ('usedInOrderId' in incoming())
+          && incoming().diff(existing()).affectedKeys().hasOnly(['used', 'usedInOrderId', 'usedAt']);
+        allow delete: if false;
+      }
+    }
+
+    // Store quizzes (public question & reward info; correct option excluded)
+    match /quizzes/{quizId} {
+      allow get: if isValidId(quizId) && (existing().active == true || isAdmin());
+      allow list: if resource.data.active == true || isBootstrapAdmin();
+      allow create: if isValidId(quizId) && isAdmin() && isValidQuizPublic(incoming(), quizId);
+      allow update: if isValidId(quizId) && isAdmin() && isValidQuizPublic(incoming(), quizId) && incoming().id == existing().id;
+      allow delete: if isValidId(quizId) && isAdmin();
+    }
+
+    // Secret quiz answer index & verification truth: strictly admin-only read/write
+    match /quizAnswers/{quizId} {
+      allow get: if isValidId(quizId) && isAdmin();
+      allow list: if isBootstrapAdmin();
+      allow create: if isValidId(quizId) && isAdmin() && isValidQuizAnswerSecret(incoming(), quizId);
+      allow update: if isValidId(quizId) && isAdmin() && isValidQuizAnswerSecret(incoming(), quizId) && incoming().quizId == existing().quizId;
+      allow delete: if isValidId(quizId) && isAdmin();
+    }
+
+    // Customer orders: anyone can submit valid order; coupon redemption verified atomically;
+    // PII reads restricted to owning user and admins
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && (isAdmin() || (isVerifiedUser() && existing().userId == request.auth.uid));
+      allow list: if isBootstrapAdmin() || (isVerifiedUser() && resource.data.userId == request.auth.uid);
+      allow create: if isValidId(orderId)
+        && isValidCustomerOrder(incoming())
+        && incoming().status == 'নতুন অর্ডার'
+        && incoming().createdAt == request.time
+        && (!('userId' in incoming()) || (isVerifiedUser() && incoming().userId == request.auth.uid))
+        && isValidOrderCouponUsage(incoming());
+      allow update: if isValidId(orderId)
+        && isAdmin()
+        && isValidCustomerOrder(incoming())
+        && incoming().orderId == existing().orderId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+      allow delete: if isValidId(orderId) && isAdmin();
+    }
+
+    // Admin registry: only existing verified admins can read/write
+    match /admins/{uid} {
+      allow get: if isValidId(uid) && isAdmin();
+      allow list: if isBootstrapAdmin();
+      allow create: if isValidId(uid) && isAdmin() && isValidAdminUser(incoming()) && incoming().uid == uid;
+      allow update: if false;
+      allow delete: if isValidId(uid) && isAdmin() && uid != request.auth.uid;
+    }
+  }
+}
